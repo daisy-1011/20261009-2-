@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1556a8">
+  <title>Mini AI Assistant &amp; YKVS demo</title>
+  <style>
+    :root { color-scheme: light; --blue:#1556a8; --pale:#e7f0ff; --line:#d8dee8; --ink:#243247; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#f4f7fb; color:var(--ink); font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC",sans-serif; }
+    main { width:min(1180px,100%); margin:0 auto; padding:24px 18px 36px; }
+    header { display:flex; align-items:center; gap:12px; margin:0 0 16px; }
+    .crest { width:42px; height:42px; display:grid; place-items:center; border-radius:13px; color:#fff; background:var(--blue); font-size:22px; }
+    h1 { margin:0; font-size:clamp(1.2rem,3vw,1.65rem); font-weight:700; }
+    .sub { color:#617188; margin:3px 0 0; font-size:.9rem; }
+    .panel { border:1px solid var(--line); border-radius:14px; background:#fff; padding:16px; box-shadow:0 5px 22px #173b6810; }
+    #log { height:min(62vh,680px); min-height:380px; overflow:auto; padding:4px 2px 10px; }
+    .msg { margin:8px 0; padding:11px 13px; border-radius:10px; white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.65; }
+    .user { background:var(--pale); margin-left:8%; }
+    .assistant { border:1px solid #e2e7ef; background:#fff; margin-right:4%; }
+    .meta { color:#748196; font-size:.78rem; margin-bottom:3px; }
+    a { color:#0759b5; text-decoration:underline; text-underline-offset:2px; }
+    .examples { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 12px; }
+    .examples button { border:1px solid #cdd8e8; background:#f8fbff; color:#24486f; border-radius:20px; padding:7px 11px; cursor:pointer; font:inherit; font-size:.88rem; }
+    .examples button:hover { border-color:var(--blue); background:#edf5ff; }
+    .helper { margin:12px 0 14px; padding:12px 14px; border:1px solid #d9e3f0; border-radius:12px; background:#f8fbff; }
+    .helper-title { display:flex; align-items:center; gap:7px; font-weight:700; color:#24486f; margin-bottom:9px; }
+    .helper-tabs { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:9px; }
+    .helper-tabs button { border:1px solid #cdd8e8; background:#fff; color:#24486f; border-radius:18px; padding:6px 10px; cursor:pointer; font:inherit; font-size:.86rem; }
+    .helper-tabs button:hover, .helper-tabs button.active { border-color:var(--blue); background:#eaf3ff; color:#123f75; }
+    .helper-content { color:#40536b; font-size:.88rem; line-height:1.7; }
+    .helper-examples { display:flex; flex-wrap:wrap; gap:6px 12px; margin-top:4px; }
+    .helper-example { cursor:pointer; color:#0759b5; text-decoration:underline; text-underline-offset:2px; }
+    .helper-note { margin-top:6px; color:#69788d; font-size:.82rem; }
+    label { display:block; font-weight:600; margin:6px 0; }
+    textarea { display:block; width:100%; min-height:82px; resize:vertical; padding:11px 12px; border:1px solid #bbc6d5; border-radius:9px; font:inherit; }
+    textarea:focus { outline:3px solid #1556a833; border-color:var(--blue); }
+    .actions { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:9px; }
+    .actions button { border:0; border-radius:8px; padding:9px 18px; color:#fff; background:var(--blue); font:inherit; cursor:pointer; }
+    .actions button:disabled { opacity:.55; cursor:wait; }
+    .actions .clear { border:1px solid #cdd5df; background:#fff; color:#425168; }
+    .hint, footer { font-size:.82rem; color:#69788d; }
+    footer { margin-top:13px; }
+    @media (max-width:560px) { main { padding:15px 10px 24px; } .panel { padding:11px; } #log { min-height:270px; } .user { margin-left:3%; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="crest" aria-hidden="true">🎓</div>
+    <div><h1>Mini AI Assistant &amp; YKVS demo</h1><p class="sub">鶯歌工商校園公開資料查詢示範</p></div>
+  </header>
+  <section class="panel" aria-label="鶯歌工商校園資料查詢">
+    <div id="log" role="log" aria-live="polite" aria-label="對話紀錄"></div>
+    <div class="examples" aria-label="15 個快捷查詢">
+      <button type="button" data-query="鶯歌工商生活輔導組分機是多少？">查詢生輔組分機</button>
+      <button type="button" data-query="鶯歌工商教務處分機是多少？">查詢教務處分機</button>
+      <button type="button" data-fill="XXX老師的分機？">查詢老師分機</button>
+      <button type="button" data-fill="XXX老師在哪個單位？">查詢老師單位</button>
+      <button type="button" data-fill="XXX老師的職稱？">查詢老師職稱</button>
+      <button type="button" data-query="資二忠班級分機是多少？">查詢班級分機</button>
+      <button type="button" data-query="鶯歌工商電腦教室分機是多少？">查詢電腦教室分機</button>
+      <button type="button" data-query="在家因病不能到校，返校後幾天內要補辦請假？請提供規定來源。">查詢請假期限</button>
+      <button type="button" data-query="請查鶯歌工商學生請假規定，並附校方來源。">查詢學生請假規定</button>
+      <button type="button" data-query="鶯歌工商學生在校使用行動載具有哪些規定？請附校方來源。">查詢行動載具規定</button>
+      <button type="button" data-query="鶯歌工商學生有哪些嘉獎或獎勵條件？請附校方來源。">查詢學生獎勵規定</button>
+      <button type="button" data-query="鶯歌工商學生有哪些警告、小過或大過的懲處規定？請附校方來源。">查詢學生懲處規定</button>
+      <button type="button" data-query="請查鶯歌工商學生生活秩序相關規定，並附校方來源。">查詢生活規定</button>
+      <button type="button" data-query="請查鶯歌工商本週行事曆有哪些行程？">查詢本週行事曆</button>
+      <button type="button" data-query="鶯歌今天的天氣如何？">查詢今日天氣</button>
+    </div>
+
+    <div class="helper" aria-label="查詢小幫手">
+      <div class="helper-title">🔎 查詢小幫手</div>
+      <div class="helper-tabs" role="tablist" aria-label="查詢格式分類">
+        <button type="button" class="active" data-helper="teacher">👨‍🏫 老師</button>
+        <button type="button" data-helper="extension">☎️ 分機</button>
+        <button type="button" data-helper="calendar">📅 行事曆</button>
+        <button type="button" data-helper="leave">📝 請假</button>
+        <button type="button" data-helper="discipline">🏆 獎懲</button>
+        <button type="button" data-helper="mobile">📱 行動載具</button>
+      </div>
+      <div id="helperContent" class="helper-content" aria-live="polite"></div>
+    </div>
+    <label for="msg">輸入問題</label>
+    <textarea id="msg" placeholder="例如：鶯歌工商生活輔導組分機是多少？"></textarea>
+    <div class="actions">
+      <span class="hint">按「送出」或 Ctrl+Enter 查詢</span>
+      <div><button id="clear" class="clear" type="button">清除對話</button> <button id="send" type="button">送出</button></div>
+    </div>
+  </section>
+  <footer>本頁查詢鶯歌工商提供的公開校務資料。規定內容與辦理方式請以校方最新公告及正式文件為準。</footer>
+</main>
+<script>
+  const logEl = document.getElementById('log');
+  const msgEl = document.getElementById('msg');
+  const sendBtn = document.getElementById('send');
+  const messages = [];
+
+  const helperData = {
+    teacher: { title:'老師查詢格式', note:'XXX 請替換成老師姓名。', examples:['XXX老師的分機？','XXX老師在哪個單位？','XXX老師的職稱？','請查XXX老師','XXX是誰？'] },
+    extension: { title:'分機查詢格式', examples:['生輔組分機是多少？','教務處分機是多少？','資處科分機是多少？','XXX老師的分機？','資二忠班級分機是多少？'] },
+    calendar: { title:'行事曆查詢格式', examples:['今天有哪些校務行程？','本週有哪些行程？','X月X日有什麼活動？','第X週有哪些行程？','請查115-1行事曆'] },
+    leave: { title:'請假查詢格式', examples:['學生請假期限是多久？','事假如何辦理？','病假如何辦理？','請假需要哪些證明？','請查學生請假規定'] },
+    discipline: { title:'獎懲查詢格式', examples:['學生什麼情況會被記警告？','什麼情況會記小過？','什麼情況會記大過？','學生有哪些嘉獎條件？','請查學生獎懲規定'] },
+    mobile: { title:'行動載具查詢格式', examples:['學生在校可以使用手機嗎？','上課可以使用手機嗎？','什麼時間可以使用手機？','違反行動載具規定如何處理？','請查學生在校使用行動載具規定'] }
+  };
+
+  function showHelper(key) {
+    const data = helperData[key];
+    const box = document.getElementById('helperContent');
+    box.replaceChildren();
+    const title = document.createElement('strong'); title.textContent = data.title + '：'; box.appendChild(title);
+    const examples = document.createElement('div'); examples.className = 'helper-examples';
+    data.examples.forEach(text => {
+      const span = document.createElement('span'); span.className = 'helper-example'; span.textContent = text;
+      span.title = '點一下帶入輸入框';
+      span.addEventListener('click', () => { msgEl.value = text; msgEl.focus(); });
+      examples.appendChild(span);
+    });
+    box.appendChild(examples);
+    if (data.note) { const note = document.createElement('div'); note.className='helper-note'; note.textContent='💡 ' + data.note; box.appendChild(note); }
+    document.querySelectorAll('[data-helper]').forEach(btn => btn.classList.toggle('active', btn.dataset.helper === key));
+  }
+
+  function appendTextWithLinks(parent, text) {
+    const pattern = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|(https?:\/\/[^\s<>"')\]]+)/g;
+    let last = 0, match;
+    while ((match = pattern.exec(text)) !== null) {
+      parent.appendChild(document.createTextNode(text.slice(last, match.index)));
+      const label = match[1] || match[3];
+      const href = match[2] || match[3];
+      try {
+        const url = new URL(href);
+        if (url.protocol === 'http:' || url.protocol === 'https:') {
+          const a = document.createElement('a');
+          a.href = url.href; a.textContent = label; a.target = '_blank'; a.rel = 'noopener noreferrer';
+          parent.appendChild(a);
+        } else parent.appendChild(document.createTextNode(match[0]));
+      } catch { parent.appendChild(document.createTextNode(match[0])); }
+      last = pattern.lastIndex;
+    }
+    parent.appendChild(document.createTextNode(text.slice(last)));
+  }
+
+  function render(role, text) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    const meta = document.createElement('div'); meta.className = 'meta';
+    meta.textContent = role === 'user' ? '你' : 'AI';
+    div.appendChild(meta);
+    appendTextWithLinks(div, String(text ?? ''));
+    logEl.appendChild(div); logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  async function send(query) {
+    const text = String(query ?? msgEl.value).trim();
+    if (!text || sendBtn.disabled) return;
+    messages.push({ role:'user', content:text }); render('user', text); msgEl.value=''; sendBtn.disabled=true;
+    try {
+      // Keep Colab proxy path prefixes (e.g. /proxy/3000/) when calling the API.
+      const chatUrl = new URL('./chat', window.location.href);
+      const res = await fetch(chatUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages}) });
+      const body = await res.text();
+      let data = {};
+      try { data = body ? JSON.parse(body) : {}; } catch { data = { error: body }; }
+      if (!res.ok) throw new Error(data.error || `${res.status} ${res.statusText || '伺服器回應錯誤'}`);
+      if (Array.isArray(data.messages)) { messages.length=0; messages.push(...data.messages); }
+      render('assistant', data.reply || '目前沒有收到文字回答。');
+    } catch (err) { render('assistant', '查詢失敗：' + err.message + '。請確認 Colab server 正在執行，再重新整理頁面。'); }
+    finally { sendBtn.disabled=false; msgEl.focus(); }
+  }
+
+  sendBtn.addEventListener('click', () => send());
+  msgEl.addEventListener('keydown', e => { if (e.key==='Enter' && (e.ctrlKey || e.metaKey)) send(); });
+  document.querySelectorAll('[data-query]').forEach(btn => btn.addEventListener('click', () => send(btn.dataset.query)));
+  document.querySelectorAll('[data-fill]').forEach(btn => btn.addEventListener('click', () => { msgEl.value = btn.dataset.fill; msgEl.focus(); }));
+  document.querySelectorAll('[data-helper]').forEach(btn => btn.addEventListener('click', () => showHelper(btn.dataset.helper)));
+  showHelper('teacher');
+  document.getElementById('clear').addEventListener('click', () => { messages.length=0; logEl.replaceChildren(); msgEl.focus(); });
+</script>
+</body>
+</html>

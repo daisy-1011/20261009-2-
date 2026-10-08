@@ -1,0 +1,24 @@
+鶯歌工商 Mini AI Assistant & YKVS demo｜Colab 精簡版 v2
+快速安裝包
+
+只需上傳一個 Notebook，不必另外上傳分機更新包、法規擴充包、查詢頁 ZIP 或行事曆 JSON。
+
+安裝步驟
+1. 解壓本快速安裝包。
+2. 到 Google Colab 上傳並開啟「鶯歌工商_Mini_AI_Assistant_YKVS_demo_Colab精簡版_v2_0924.ipynb」。
+3. 在 Colab Secrets 建立 GEMINI_API_KEY 並允許 Notebook 存取。金鑰不包含在下載包中。
+4. 依序執行 Notebook 各格。第一次會從 NCHU workshop 官方 GitHub 取得原始專案並安裝 Node/Python 相依套件。
+5. 核對資料檢查顯示：場館 79 筆、人員至少 240 筆、班級 57 班、生輔組規定 4 份、行事曆 21 週。
+6. 啟動 server，開啟 Colab 建立的 /ykvs.html 新分頁連結。
+
+架構保留
+Express → 原 MCP Client → Python FastMCP search_school_info；天氣沿用 get_weather MCP。原 config.json、web/index.html 及其他 workshop MCP tools 保留。星期日期使用本機計算；分機、法規及行事曆走 MCP 快查；一般開放式問題仍走 Gemini + MCP。
+
+內含資料
+- 115-1 分機總表、人員姓名/單位/職稱/分機、場館 79 筆
+- 班級分機 57 班、廣播 3 筆
+- 生輔組四份規定及來源索引
+- 115-1 行事曆 english_center.json，21 週（2026-08-30 至 2027-01-23）
+- PDF→JSON 法規擴充工具、獨立查詢頁、查詢加速程式
+
+安裝不會自動送出模型提問。Gemini 免費額度與服務延遲依 Google 帳號及服務狀況而定；常見校務資料使用 MCP 快查以減少模型等待。
